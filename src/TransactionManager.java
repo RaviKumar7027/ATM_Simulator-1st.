@@ -9,60 +9,27 @@ public class TransactionManager {
         this.connection = connection;
     }
 
-    public void exportTransactionHistoryToPDF(String cardNumber, String fileName) {
-        List<Transaction> transactions = getTransactions(cardNumber);
-        if (transactions.isEmpty()) {
-            System.out.println("⚠️ No transactions to export.");
-            return;
-        }
 
-        PDFExportManager.generateTransactionPDF(transactions, fileName);
-        System.out.println("✅ PDF exported successfully as " + fileName);
-    }
 
-    public List<Transaction> getTransactions(String cardNumber) {
-        List<Transaction> transactions = new ArrayList<>();
 
+
+
+
+
+
+
+
+
+
+
+    public void recordTransaction(String cardNumber, String type, double amount,String phone_number) {
         try {
-            String sql = "SELECT * FROM transactions WHERE card_number = ? ORDER BY timestamp DESC";
-            PreparedStatement stmt = connection.prepareStatement(sql);
-            stmt.setString(1, cardNumber);
-            ResultSet rs = stmt.executeQuery();
-
-            while (rs.next()) {
-                Transaction tx = new Transaction();
-                tx.setCardNumber(cardNumber);
-                tx.setType(rs.getString("type"));
-                tx.setAmount(rs.getDouble("amount"));
-                tx.setDate(rs.getTimestamp("timestamp"));  // Make sure your Transaction class has this
-                transactions.add(tx);
-            }
-        } catch (SQLException e) {
-            System.out.println("❌ Error fetching transactions: " + e.getMessage());
-        }
-
-        return transactions;
-    }
-
-
-
-
-
-
-
-
-
-
-
-
-
-    public void recordTransaction(String cardNumber, String type, double amount) {
-        try {
-            String sql = "INSERT INTO transactions (card_number, type, amount, timestamp) VALUES (?, ?, ?, CURRENT_TIMESTAMP)";
+            String sql = "INSERT INTO transactions (card_number, type, amount, phone_number,timestamp) VALUES (?, ?,?, ?, CURRENT_TIMESTAMP)";
             PreparedStatement stmt = connection.prepareStatement(sql);
             stmt.setString(1, cardNumber);
             stmt.setString(2, type);
             stmt.setDouble(3, amount);
+            stmt.setString(4,phone_number);
             stmt.executeUpdate();
         } catch (SQLException e) {
             System.out.println("❌ Failed to record transaction: " + e.getMessage());

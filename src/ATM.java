@@ -59,9 +59,11 @@ public class ATM {
                 User user = new User(
                         rs.getString("card_number"),
                         rs.getString("pin"),
-                        rs.getDouble("balance")
+                        rs.getDouble("balance"),
+                        rs.getString("phone_number")
                 );
                 showMenu(user);
+
             } else {
                 System.out.println("❌ Invalid card number or PIN.");
             }
@@ -82,6 +84,11 @@ public class ATM {
         double balance = scanner.nextDouble();
         scanner.nextLine(); // consume newline
 
+        System.out.print("Enter phone number: ");
+        String phone = scanner.nextLine();
+
+
+
         try {
             // Check if card number already exists
             String checkSql = "SELECT * FROM users WHERE card_number = ?";
@@ -94,11 +101,12 @@ public class ATM {
                 return;
             }
 
-            String sql = "INSERT INTO users (card_number, pin, balance) VALUES (?, ?, ?)";
+            String sql = "INSERT INTO users (card_number, pin, balance,phone_number) VALUES (?, ?, ?,?)";
             PreparedStatement stmt = connection.prepareStatement(sql);
             stmt.setString(1, cardNumber);
             stmt.setString(2, pin);
             stmt.setDouble(3, balance);
+            stmt.setString(4, phone);
 
             int rows = stmt.executeUpdate();
             if (rows > 0) {
@@ -112,6 +120,18 @@ public class ATM {
         }
     }
 
+
+    //phone me message ka system hai
+    public void sendSMS(String phone, String message) {
+        System.out.println("\n📱 SMS to " + phone + ": " + message);
+    }
+
+
+
+
+
+
+
     private void showMenu(User user) {
         while (true) {
             System.out.println("\n=== ATM MENU ===");
@@ -121,7 +141,9 @@ public class ATM {
             System.out.println("4. Change PIN");
             System.out.println("5. Exit");
             System.out.println("6. View Transaction History");  // case 6
-            System.out.println("7. Export Transaction History to PDF");  // ✅ New Option
+            System.out.println("7. Transfer Money");  // new
+
+            // System.out.println("7. Export Transaction History to PDF");  // ✅ New Option
 
 
 
@@ -138,8 +160,12 @@ public class ATM {
                     double deposit = scanner.nextDouble();
                     user.setBalance(user.getBalance() + deposit);
                     updateBalance(user);
-                    transactionManager.recordTransaction(user.getCardNumber(), "Deposit", deposit); // ✅ Add this line
-                    transactionManager.logTransaction(user.getCardNumber(), "Deposit", deposit);
+                    transactionManager.recordTransaction(user.getCardNumber(), "Deposit", deposit, user.getPhoneNumber());
+
+                    sendSMS(user.getPhoneNumber(), "₹" + deposit + " deposited. Avl Bal: ₹" + user.getBalance());
+
+
+
 
                     System.out.println("✅ Deposit successful.");
                     break;
@@ -149,9 +175,12 @@ public class ATM {
                     if (withdraw <= user.getBalance()) {
                         user.setBalance(user.getBalance() - withdraw);
                         updateBalance(user);
-                        transactionManager.recordTransaction(user.getCardNumber(), "Withdraw", withdraw); // ✅ Add this line
+                        transactionManager.recordTransaction(user.getCardNumber(), "Withdraw", withdraw, user.getPhoneNumber());
 
-                        transactionManager.logTransaction(user.getCardNumber(), "Deposit", deposit);
+
+                        sendSMS(user.getPhoneNumber(), "₹" + withdraw + " withdrawn. Avl Bal: ₹" + user.getBalance());
+
+
 
                         System.out.println("✅ Withdrawal successful.");
                     } else {
@@ -167,11 +196,30 @@ public class ATM {
                 case 6:
                     transactionManager.showTransactionHistory(user.getCardNumber());
                     break;
+
                 case 7:
-                    System.out.print("Enter file name (without .pdf): ");
-                    String fileName = scanner.nextLine();
-                    transactionManager.exportTransactionHistoryToPDF(user.getCardNumber(), fileName + ".pdf");
+                    System.out.print("Enter recipient card number: ");
+                    String receiverCard = scanner.nextLine();
+
+                    System.out.print("Enter amount to transfer: ");
+                    double amount = scanner.nextDouble();
+                    scanner.nextLine(); // consume newline
+
+                    TransferMoney transferManager = new TransferMoney(connection);
+                    boolean success = transferManager.transferMoney(user.getCardNumber(), receiverCard, amount);
+
+                    if (success) {
+                        user.setBalance(user.getBalance() - amount); // update local object
+                        sendSMS(user.getPhoneNumber(), "₹" + amount + " transferred to " + receiverCard + ". Avl Bal: ₹" + user.getBalance());
+
+                        transactionManager.recordTransaction(user.getCardNumber(), "Transfer to " + receiverCard, amount, user.getPhoneNumber());
+                        transactionManager.recordTransaction(receiverCard, "Received from " + user.getCardNumber(), amount, null);
+                    }
                     break;
+
+
+
+
 
 
                 default:

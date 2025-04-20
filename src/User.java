@@ -3,13 +3,24 @@ public class User {
     private String cardNumber;
     private String pin;
     private double balance;
-    public User(String cardNumber,String pin,double balance){
+    private String phoneNumber;
+    public User(String cardNumber,String pin,double balance,String phoneNumber){
       this.balance=balance;
       this.pin=pin;
       this.cardNumber=cardNumber;
+      this.phoneNumber=phoneNumber;
     }
 
 
+
+
+    // Getter and Setter
+    public String getPhoneNumber() {
+        return phoneNumber;
+    }
+    public void setPhoneNumber(String phoneNumber) {
+        this.phoneNumber = phoneNumber;
+    }
 
     public String getCardNumber() {
         return cardNumber;
